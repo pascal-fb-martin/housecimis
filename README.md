@@ -33,6 +33,7 @@ To install, following the steps below:
 * Clone this repository.
 * make rebuild
 * Edit file /etc/default/housecmis to set the shell variable OPTS with all the required arguments: --key and --station. Highly recommend to set --reference as well.
+* sudo make install
 
 ## Interface
 
