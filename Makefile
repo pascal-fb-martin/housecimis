@@ -51,14 +51,14 @@ install-app:
 	cp housecmis $(HROOT)/bin
 	chown root:root $(HROOT)/bin/housecmis
 	chmod 755 $(HROOT)/bin/housecmis
-	mkdir -p $(SHARE)/public/housecmis
-	cp public/* $(SHARE)/public/housecmis
-	chmod 644 $(SHARE)/public/housecmis/*
-	chmod 755 $(SHARE) $(SHARE)/public $(SHARE)/public/housecmis
+	mkdir -p $(SHARE)/public/cmis
+	cp public/* $(SHARE)/public/cmis
+	chmod 644 $(SHARE)/public/cmis/*
+	chmod 755 $(SHARE) $(SHARE)/public $(SHARE)/public/cmis
 	touch /etc/default/housecmis
 
 uninstall-app:
-	rm -rf $(SHARE)/public/housecmis
+	rm -rf $(SHARE)/public/cmis
 	rm -f $(HROOT)/bin/housecmis
 
 purge-app:
