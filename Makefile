@@ -17,29 +17,29 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 
-HAPP=housecmis
+HAPP=housecimis
 HROOT=/usr/local
 SHARE=$(HROOT)/share/house
 
 # Application build. --------------------------------------------
 
-OBJS=housecmis.o
+OBJS=housecimis.o
 LIBOJS=
 
-all: housecmis
+all: housecimis
 
-main: housecmis.o
+main: housecimis.o
 
 clean:
-	rm -f *.o *.a housecmis
+	rm -f *.o *.a housecimis
 
 rebuild: clean all
 
 %.o: %.c
 	gcc -c -Os -o $@ $<
 
-housecmis: $(OBJS)
-	gcc -Os -o housecmis $(OBJS) -lhouseportal -lechttp -lssl -lcrypto -lm -lrt
+housecimis: $(OBJS)
+	gcc -Os -o housecimis $(OBJS) -lhouseportal -lechttp -lssl -lcrypto -lm -lrt
 
 # Application files installation --------------------------------
 
@@ -47,24 +47,24 @@ install-app:
 	mkdir -p $(HROOT)/bin
 	mkdir -p /var/lib/house
 	mkdir -p /etc/house
-	rm -f $(HROOT)/bin/housecmis
-	cp housecmis $(HROOT)/bin
-	chown root:root $(HROOT)/bin/housecmis
-	chmod 755 $(HROOT)/bin/housecmis
-	mkdir -p $(SHARE)/public/cmis
-	cp public/* $(SHARE)/public/cmis
-	chmod 644 $(SHARE)/public/cmis/*
-	chmod 755 $(SHARE) $(SHARE)/public $(SHARE)/public/cmis
-	touch /etc/default/housecmis
+	rm -f $(HROOT)/bin/housecimis
+	cp housecimis $(HROOT)/bin
+	chown root:root $(HROOT)/bin/housecimis
+	chmod 755 $(HROOT)/bin/housecimis
+	mkdir -p $(SHARE)/public/cimis
+	cp public/* $(SHARE)/public/cimis
+	chmod 644 $(SHARE)/public/cimis/*
+	chmod 755 $(SHARE) $(SHARE)/public $(SHARE)/public/cimis
+	touch /etc/default/housecimis
 
 uninstall-app:
-	rm -rf $(SHARE)/public/cmis
-	rm -f $(HROOT)/bin/housecmis
+	rm -rf $(SHARE)/public/cimis
+	rm -f $(HROOT)/bin/housecimis
 
 purge-app:
 
 purge-config:
-	rm -rf /etc/default/housecmis
+	rm -rf /etc/default/housecimis
 
 # System installation. ------------------------------------------
 
@@ -77,12 +77,12 @@ docker: all
 	mkdir -p build
 	cp Dockerfile build
 	mkdir -p build$(HROOT)/bin
-	cp housecmis build$(HROOT)/bin
-	chmod 755 build$(HROOT)/bin/housecmis
-	mkdir -p build$(HROOT)/share/house/public/housecmis
-	cp public/* build$(HROOT)/share/house/public/housecmis
-	chmod 644 build$(HROOT)/share/house/public/housecmis/*
-	cp $(SHARE)/public/house.css build$(SHARE)/public
-	chmod 644 build$(SHARE)/public/house.css
-	cd build ; docker build -t housecmis .
+	cp housecimis build$(HROOT)/bin
+	chmod 755 build$(HROOT)/bin/housecimis
+	mkdir -p build$(HROOT)/share/house/public/cimis
+	cp public/* build$(HROOT)/share/house/public/cimis
+	chmod 644 build$(HROOT)/share/house/public/cimis/*
+	cp $(SHARE)/public/house.css build$(HROOT)/share/house/public
+	chmod 644 build$(HROOT)/share/house/public/house.css
+	cd build ; docker build -t housecimis .
 	rm -rf build

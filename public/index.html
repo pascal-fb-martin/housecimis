@@ -6,7 +6,7 @@
 function indexUpdate (response) {
 
     document.getElementsByTagName('title')[0].innerHTML =
-        response.host+' - CMIS';
+        response.host+' - CIMIS';
 
     document.getElementById('portal').href = 'http://'+response.proxy+'/index.html';
 
@@ -50,10 +50,10 @@ function indexGet (url) {
     }
     command.send(null);
 }
-function indexInfo () {indexGet ("/cmis/status");}
-function selectDaily () {indexGet("/cmis/set?index=daily");}
-function selectWeekly () {indexGet("/cmis/set?index=weekly");}
-function selectMonthly () {indexGet("/cmis/set?index=monthly");}
+function indexInfo () {indexGet ("/cimis/status");}
+function selectDaily () {indexGet("/cimis/set?index=daily");}
+function selectWeekly () {indexGet("/cimis/set?index=weekly");}
+function selectMonthly () {indexGet("/cimis/set?index=monthly");}
 
 window.onload = function() {
    indexInfo();
@@ -68,7 +68,7 @@ window.onload = function() {
    <table class="housetop">
    <tr>
    <td><a id="portal" href="/index.html">Portal</a></td>
-   <td><span>CMIS</span></td>
+   <td><span>CIMIS</span></td>
    </tr>
    </table> 
    </td></tr>

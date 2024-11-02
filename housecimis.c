@@ -1,4 +1,4 @@
-/* HouseCMIS - A simple home web service to estimate an index from CMIS.
+/* HouseCIMIS - A simple home web service to estimate an index from CIMIS.
  *
  * Copyright 2020, Pascal Martin
  *
@@ -39,8 +39,8 @@ static int Debug = 0;
 
 // Configuration items (from command line only, small or confidential data)..
 //
-static const char *CMISAppKey;
-static int    CMISStation = 0;
+static const char *CIMISAppKey;
+static int    CIMISStation = 0;
 static int    Et0ReferenceDaily = 21; // Max daily value in August 2024.
 
 static int    Et0ReferenceWeekly = 0;
@@ -57,45 +57,45 @@ static int   *Et0Accumulated = 0;
 static int    Et0Weekly[7] = {0};
 static int    Et0Monthly[32] = {0};
 
-static int    CMISIndexDaily = 0;
-static int    CMISIndexWeekly = 0;
-static int    CMISIndexMonthly = 0;
+static int    CIMISIndexDaily = 0;
+static int    CIMISIndexWeekly = 0;
+static int    CIMISIndexMonthly = 0;
 
-static int    CMISPriority = 9;
-static char   CMISState[2] = "u";
-static char   CMISError[256] = "";
-static time_t CMISUpdate = 0;
-static time_t CMISReceived = 0;
-static time_t CMISQueried = 0;
+static int    CIMISPriority = 9;
+static char   CIMISState[2] = "u";
+static char   CIMISError[256] = "";
+static time_t CIMISUpdate = 0;
+static time_t CIMISReceived = 0;
+static time_t CIMISQueried = 0;
 
-static const char *CMISUrl = "https://et.water.ca.gov/api/data";
+static const char *CIMISUrl = "https://et.water.ca.gov/api/data";
 
-static const char CMISEt0Path[] = ".Data.Providers[0].Records[0].DayEto.Value";
+static const char CIMISEt0Path[] = ".Data.Providers[0].Records[0].DayEto.Value";
 
-static const char *CMISIndexType = "Weekly";
-static int   *CMISIndex = &CMISIndexWeekly;
+static const char *CIMISIndexType = "Weekly";
+static int   *CIMISIndex = &CIMISIndexWeekly;
 
-static void housecmis_select_index (const char *value) {
+static void housecimis_select_index (const char *value) {
     if (!strcasecmp ("daily", value)) {
-        CMISIndexType = "Daily";
-        CMISIndex = &CMISIndexDaily;
+        CIMISIndexType = "Daily";
+        CIMISIndex = &CIMISIndexDaily;
         Et0Reference = &Et0ReferenceDaily;
         Et0Accumulated = &Et0Daily;
     } else if (!strcasecmp ("weekly", value)) {
-        CMISIndexType = "Weekly";
-        CMISIndex = &CMISIndexWeekly;
+        CIMISIndexType = "Weekly";
+        CIMISIndex = &CIMISIndexWeekly;
         Et0Reference = &Et0ReferenceWeekly;
         Et0Accumulated = &AccumulatedEt0Weekly;
     } else if (!strcasecmp ("monthly", value)) {
-        CMISIndexType = "Monthly";
-        CMISIndex = &CMISIndexMonthly;
+        CIMISIndexType = "Monthly";
+        CIMISIndex = &CIMISIndexMonthly;
         Et0Reference = &Et0ReferenceMonthly;
         Et0Accumulated = &AccumulatedEt0Monthly;
     }
 }
 
-static const char *housecmis_status (const char *method, const char *uri,
-                                     const char *data, int length) {
+static const char *housecimis_status (const char *method, const char *uri,
+                                      const char *data, int length) {
     static char buffer[65537];
     static char pool[65537];
     static char host[256];
@@ -113,17 +113,17 @@ static const char *housecmis_status (const char *method, const char *uri,
     echttp_json_add_integer (context, root, "timestamp", (long)time(0));
     int top = echttp_json_add_object (context, root, "waterindex");
     int container = echttp_json_add_object (context, top, "status");
-    echttp_json_add_string (context, container, "name", "cmis");
-    echttp_json_add_string (context, container, "type", CMISIndexType);
-    echttp_json_add_string (context, container, "origin", CMISUrl);
-    echttp_json_add_string (context, container, "state", CMISState);
-    if (CMISError[0]) {
-        echttp_json_add_string (context, container, "error", CMISError);
+    echttp_json_add_string (context, container, "name", "cimis");
+    echttp_json_add_string (context, container, "type", CIMISIndexType);
+    echttp_json_add_string (context, container, "origin", CIMISUrl);
+    echttp_json_add_string (context, container, "state", CIMISState);
+    if (CIMISError[0]) {
+        echttp_json_add_string (context, container, "error", CIMISError);
     } else {
-       echttp_json_add_integer (context, container, "index", *CMISIndex);
-       echttp_json_add_integer (context, container, "received", (long)CMISReceived);
-       echttp_json_add_integer (context, container, "updated", (long)CMISUpdate);
-       echttp_json_add_integer (context, container, "priority", (long)CMISPriority);
+       echttp_json_add_integer (context, container, "index", *CIMISIndex);
+       echttp_json_add_integer (context, container, "received", (long)CIMISReceived);
+       echttp_json_add_integer (context, container, "updated", (long)CIMISUpdate);
+       echttp_json_add_integer (context, container, "priority", (long)CIMISPriority);
        echttp_json_add_integer (context, container, "et0", (long)(*Et0Accumulated));
        echttp_json_add_integer (context, container, "et0Reference", (long)(*Et0Reference));
     }
@@ -137,20 +137,20 @@ static const char *housecmis_status (const char *method, const char *uri,
     return buffer;
 }
 
-static const char *housecmis_set (const char *method, const char *uri,
-                                  const char *data, int length) {
+static const char *housecimis_set (const char *method, const char *uri,
+                                   const char *data, int length) {
     const char *value = echttp_parameter_get("index");
     if (value) {
-        housecmis_select_index (value);
+        housecimis_select_index (value);
     }
-    return housecmis_status (method, uri, data, length);
+    return housecimis_status (method, uri, data, length);
 }
 
-static int housecmis_convert_et0 (const char *input) {
+static int housecimis_convert_et0 (const char *input) {
     return lrint(atof(input) * 100);
 }
 
-static void housecmis_response
+static void housecimis_response
                 (void *origin, int status, char *data, int length) {
 
     ParserToken tokens[100];
@@ -158,38 +158,38 @@ static void housecmis_response
 
     status = echttp_redirected("GET");
     if (!status) {
-        echttp_submit (0, 0, housecmis_response, (void *)0);
+        echttp_submit (0, 0, housecimis_response, (void *)0);
         return;
     }
 
-    CMISState[0] = 'e'; // Assume error.
+    CIMISState[0] = 'e'; // Assume error.
     if (status != 200) {
-        snprintf (CMISError, sizeof(CMISError),
-                  "HTTP %d on %s", status, CMISUrl);
+        snprintf (CIMISError, sizeof(CIMISError),
+                  "HTTP %d on %s", status, CIMISUrl);
         return;
     }
     DEBUG ("Response: %s\n", data);
 
     const char *error = echttp_json_parse (data, tokens, &count);
     if (error) {
-        snprintf (CMISError, sizeof(CMISError),
+        snprintf (CIMISError, sizeof(CIMISError),
                   "XML syntax error %s", error);
-        DEBUG ("Error: %s\n", CMISError);
+        DEBUG ("Error: %s\n", CIMISError);
         return;
     }
     if (count <= 0) {
-        snprintf (CMISError, sizeof(CMISError), "no data");
-        DEBUG ("Error: %s\n", CMISError);
+        snprintf (CIMISError, sizeof(CIMISError), "no data");
+        DEBUG ("Error: %s\n", CIMISError);
         return;
     }
 
-    int index = echttp_json_search (tokens, CMISEt0Path);
+    int index = echttp_json_search (tokens, CIMISEt0Path);
     if (index <= 0) {
-        snprintf (CMISError, sizeof(CMISError), "no daily Et0 found");
-        DEBUG ("Error: %s\n", CMISError);
+        snprintf (CIMISError, sizeof(CIMISError), "no daily Et0 found");
+        DEBUG ("Error: %s\n", CIMISError);
         return;
     }
-    Et0Daily = housecmis_convert_et0 (tokens[index].value.string);
+    Et0Daily = housecimis_convert_et0 (tokens[index].value.string);
 
     // Record this new Et0 and then calculate our three indexes.
     //
@@ -203,7 +203,7 @@ static void housecmis_response
     if (local.tm_mday < Et0LastMonth) Et0Monthly[31] = 0; // New month.
     Et0LastMonth = local.tm_mday;
 
-    CMISIndexDaily = (100 * Et0Daily) / Et0ReferenceDaily;
+    CIMISIndexDaily = (100 * Et0Daily) / Et0ReferenceDaily;
 
     int i;
     AccumulatedEt0Weekly = 0;
@@ -213,7 +213,7 @@ static void housecmis_response
         else
             AccumulatedEt0Weekly += Et0Daily; // Semi-decent default.
     }
-    CMISIndexWeekly = (100 * AccumulatedEt0Weekly) / (7 * Et0ReferenceDaily);
+    CIMISIndexWeekly = (100 * AccumulatedEt0Weekly) / (7 * Et0ReferenceDaily);
 
     AccumulatedEt0Monthly = 0;
     for (i = 1; i < 32; ++i) {
@@ -222,20 +222,20 @@ static void housecmis_response
         else
             AccumulatedEt0Monthly += Et0Daily; // Semi-decent default.
     }
-    CMISIndexMonthly = (100 * AccumulatedEt0Monthly) / (31 * Et0ReferenceDaily);
+    CIMISIndexMonthly = (100 * AccumulatedEt0Monthly) / (31 * Et0ReferenceDaily);
 
-    CMISState[0] = 'a'; // No error found.
-    CMISError[0] = 0;
-    CMISUpdate = now - (local.tm_hour * 3600)
+    CIMISState[0] = 'a'; // No error found.
+    CIMISError[0] = 0;
+    CIMISUpdate = now - (local.tm_hour * 3600)
                      - (local.tm_min * 60)
                      - local.tm_sec + 3600; // Beginning of day.
-    CMISReceived = now;
+    CIMISReceived = now;
 
-    CMISQueried = 0; // Query complete.
+    CIMISQueried = 0; // Query complete.
     DEBUG ("Success.\n");
 }
 
-static void housecmis_background (int fd, int mode) {
+static void housecimis_background (int fd, int mode) {
 
     static time_t LastCall = 0;
     time_t now = time(0);
@@ -252,18 +252,18 @@ static void housecmis_background (int fd, int mode) {
                 Renewed = now;
             }
         } else if (now % 5 == 0) {
-            static const char *path[] = {"waterindex:/cmis"};
+            static const char *path[] = {"waterindex:/cimis"};
             houseportal_register (echttp_port(4), path, 1);
             Renewed = now;
         }
     }
 
-    if (CMISQueried) {
-        if (now < CMISQueried + 300) return; // Do not retry too often.
+    if (CIMISQueried) {
+        if (now < CIMISQueried + 300) return; // Do not retry too often.
     }
-    CMISQueried = now;
+    CIMISQueried = now;
 
-    if (yesterday < CMISUpdate + 24 * 3600) return; // Ask only once a day.
+    if (yesterday < CIMISUpdate + 24 * 3600) return; // Ask only once a day.
 
     struct tm local = *localtime (&yesterday);
 
@@ -272,22 +272,22 @@ static void housecmis_background (int fd, int mode) {
 
     char url[1024];
     snprintf (url, sizeof(url), "%s?appkey=%s&targets=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&dataItems=day-eto",
-              CMISUrl, CMISAppKey, CMISStation,
+              CIMISUrl, CIMISAppKey, CIMISStation,
               year, month, local.tm_mday,
               year, month, local.tm_mday);
 
     const char *error = echttp_client ("GET", url);
     if (error) {
-        snprintf (CMISError, sizeof(CMISError),
+        snprintf (CIMISError, sizeof(CIMISError),
                   "cannot connect, %s", error);
-        CMISState[0] = 'f';
+        CIMISState[0] = 'f';
         return;
     }
     DEBUG ("Query: %s\n", url);
 
     echttp_attribute_set ("Accept", "application/json");
 
-    echttp_submit (0, 0, housecmis_response, (void *)0);
+    echttp_submit (0, 0, housecimis_response, (void *)0);
 }
 
 int main (int argc, const char **argv) {
@@ -299,28 +299,28 @@ int main (int argc, const char **argv) {
     open ("/dev/null", O_RDONLY);
     dup(open ("/dev/null", O_WRONLY));
 
-    housecmis_select_index ("weekly");
+    housecimis_select_index ("weekly");
 
     int i;
     const char *value;
     for (i = 1; i < argc; ++i) {
         if (echttp_option_match ("-priority=", argv[i], &value)) {
-            CMISPriority = atoi(value);
-            if (CMISPriority < 0) CMISPriority = 0;
+            CIMISPriority = atoi(value);
+            if (CIMISPriority < 0) CIMISPriority = 0;
         } else if (echttp_option_match ("-key=", argv[i], &value)) {
-            CMISAppKey = value;
+            CIMISAppKey = value;
         } else if (echttp_option_match ("-station=", argv[i], &value)) {
-            CMISStation = atoi(value);
+            CIMISStation = atoi(value);
         } else if (echttp_option_match ("-reference=", argv[i], &value)) {
             Et0ReferenceDaily = atoi(value);
         } else if (echttp_option_match ("-index=", argv[i], &value)) {
-            housecmis_select_index (value);
+            housecimis_select_index (value);
         } else if (echttp_option_present ("-d", argv[i])) {
             Debug = 1;
         }
     }
-    if (!CMISAppKey) exit(1);
-    if (!CMISPriority) exit(2);
+    if (!CIMISAppKey) exit(1);
+    if (!CIMISPriority) exit(2);
 
     Et0ReferenceWeekly = Et0ReferenceDaily * 7;
     Et0ReferenceMonthly = Et0ReferenceDaily * 31;
@@ -332,10 +332,10 @@ int main (int argc, const char **argv) {
     argc = echttp_open (argc, argv);
     if (echttp_dynamic_port())
         houseportal_initialize (argc, argv);
-    echttp_route_uri ("/cmis/set", housecmis_set);
-    echttp_route_uri ("/cmis/status", housecmis_status);
+    echttp_route_uri ("/cimis/set", housecimis_set);
+    echttp_route_uri ("/cimis/status", housecimis_status);
     echttp_static_route ("/", "/usr/local/share/house/public");
-    echttp_background (&housecmis_background);
+    echttp_background (&housecimis_background);
     echttp_loop();
 }
 

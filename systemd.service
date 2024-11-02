@@ -1,5 +1,5 @@
 [Unit]
-Description=the BeWaterWise watering index interface
+Description=the CIMIS watering index interface
 After=network-online.target houseportal.service
 StartLimitIntervalSec=500
 StartLimitBurst=5
@@ -8,9 +8,9 @@ StartLimitBurst=5
 Restart=on-failure
 RestartSec=50s
 Environment="OPTS="
-EnvironmentFile=-/etc/default/housecmis
-EnvironmentFile=-/etc/sysconfig/housecmis
-ExecStart=/usr/local/bin/housecmis $OPTS
+EnvironmentFile=-/etc/default/housecimis
+EnvironmentFile=-/etc/sysconfig/housecimis
+ExecStart=/usr/local/bin/housecimis $OPTS
 
 [Install]
 WantedBy=multi-user.target
