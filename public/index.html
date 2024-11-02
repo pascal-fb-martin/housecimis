@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel=stylesheet type="text/css" href="/house.css" title="House">
+<script>
+function indexUpdate (response) {
+
+    document.getElementsByTagName('title')[0].innerHTML =
+        response.host+' - CMIS';
+
+    document.getElementById('portal').href = 'http://'+response.proxy+'/index.html';
+
+    document.getElementById('indextype').innerHTML =
+        response.waterindex.status.type;
+
+    if (response.waterindex.status.received) {
+        var received = new Date(response.waterindex.status.received * 1000);
+        received = received.toLocaleString();
+        if (received.indexOf(" GMT") > 0)
+            received = received.substr(0, received.indexOf(" GMT"));
+        var updated = new Date(response.waterindex.status.updated * 1000);
+        updated = updated.toLocaleString();
+        if (updated.indexOf(" GMT") > 0)
+            updated = updated.substr(0, updated.indexOf(" GMT"));
+
+        document.getElementById('indexvalue').innerHTML =
+            response.waterindex.status.index+'%';
+        document.getElementById('priority').innerHTML =
+            response.waterindex.status.priority;
+        document.getElementById('received').innerHTML = received;
+        document.getElementById('updated').innerHTML = updated;
+        document.getElementById('et0').innerHTML =
+            response.waterindex.status.et0;
+        document.getElementById('et0Reference').innerHTML =
+            response.waterindex.status.et0Reference;
+    } else {
+        document.getElementById('indexvalue').innerHTML =
+            response.waterindex.status.error;
+    }
+}
+
+function indexGet (url) {
+
+    var command = new XMLHttpRequest();
+    command.open("GET", url);
+    command.onreadystatechange = function () {
+        if (command.readyState === 4 && command.status === 200) {
+            indexUpdate(JSON.parse(command.responseText));
+        }
+    }
+    command.send(null);
+}
+function indexInfo () {indexGet ("/cmis/status");}
+function selectDaily () {indexGet("/cmis/set?index=daily");}
+function selectWeekly () {indexGet("/cmis/set?index=weekly");}
+function selectMonthly () {indexGet("/cmis/set?index=monthly");}
+
+window.onload = function() {
+   indexInfo();
+   setInterval (indexInfo, 60000);
+}
+</script>
+<title></title>
+</head>
+<body>
+   <table class="housetopcontainer">
+   <tr><td>
+   <table class="housetop">
+   <tr>
+   <td><a id="portal" href="/index.html">Portal</a></td>
+   <td><span>CMIS</span></td>
+   </tr>
+   </table> 
+   </td></tr>
+   </table> 
+   <table class="housepanel">
+   <tr><td>
+   <div class="housepane">
+   <table class="housestatus">
+   <tr><td colspan="2"><span class="housetitle">Watering Index</span></td></tr>
+   <tr><td>Type:</td>
+   <td><span class="housedata" id="indextype"></span></td></tr>
+   <tr><td>Index:</td>
+   <td><span class="housedata" id="indexvalue"></span></td></tr>
+   <tr><td>Priority:</td>
+   <td><span class="housedata" id="priority"></span></td></tr>
+   <tr><td>Index Date:</td>
+   <td><span class="housedata" id="updated"></span></td></tr>
+   <tr><td>Received:</td>
+   <td><span class="housedata" id="received"></span></td></tr>
+   <tr><td>Et0:</td>
+   <td><span class="housedata" id="et0"></span></td></tr>
+   <tr><td>Et0 Reference:</td>
+   <td><span class="housedata" id="et0Reference"></span></td></tr>
+   </table>
+   </div>
+   </td></tr>
+   </table> 
+   <table class="housepanelbuttongroup">
+   <tr><td><button class="housepanelbutton" onclick="selectDaily()">Use Daily Index</button></td></tr>
+   <tr><td><button class="housepanelbutton" onclick="selectWeekly()">Use Weekly Index</button></td></tr>
+   <tr><td><button class="housepanelbutton" onclick="selectMonthly()">Use Monthly Index</button></td></tr>
+   </table>
+</body>
+</html>
+
