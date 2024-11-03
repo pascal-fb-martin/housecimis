@@ -27,6 +27,9 @@
 #include <time.h>
 #include <math.h>
 
+#include "housediscover.h"
+#include "houselog.h"
+
 #include "echttp.h"
 #include "echttp_static.h"
 #include "echttp_json.h"
@@ -166,6 +169,8 @@ static void housecimis_response
     if (status != 200) {
         snprintf (CIMISError, sizeof(CIMISError),
                   "HTTP %d on %s", status, CIMISUrl);
+        houselog_trace (HOUSE_FAILURE, "HTTP",
+                        "ERROR %d on %s", status, CIMISUrl);
         return;
     }
     DEBUG ("Response: %s\n", data);
@@ -173,13 +178,15 @@ static void housecimis_response
     const char *error = echttp_json_parse (data, tokens, &count);
     if (error) {
         snprintf (CIMISError, sizeof(CIMISError),
-                  "XML syntax error %s", error);
+                  "JSON syntax error %s", error);
         DEBUG ("Error: %s\n", CIMISError);
+        houselog_trace (HOUSE_FAILURE, "JSON", "SYNTAX ERROR %s", error);
         return;
     }
     if (count <= 0) {
         snprintf (CIMISError, sizeof(CIMISError), "no data");
         DEBUG ("Error: %s\n", CIMISError);
+        houselog_trace (HOUSE_FAILURE, "JSON", "NO DATA");
         return;
     }
 
@@ -187,6 +194,7 @@ static void housecimis_response
     if (index <= 0) {
         snprintf (CIMISError, sizeof(CIMISError), "no daily Et0 found");
         DEBUG ("Error: %s\n", CIMISError);
+        houselog_trace (HOUSE_FAILURE, "JSON", CIMISError);
         return;
     }
     Et0Daily = housecimis_convert_et0 (tokens[index].value.string);
@@ -233,6 +241,9 @@ static void housecimis_response
 
     CIMISQueried = 0; // Query complete.
     DEBUG ("Success.\n");
+    houselog_event ("CMIS", "INDEX", "NEW",
+                    "INDEX %d%% (DAILY) %d%% (WEEKLY) %d%% (MONTHLY)", 
+                    CIMISIndexDaily, CIMISIndexWeekly, CIMISIndexMonthly);
 }
 
 static void housecimis_background (int fd, int mode) {
@@ -258,6 +269,9 @@ static void housecimis_background (int fd, int mode) {
         }
     }
 
+    housediscover (now);
+    houselog_background (now);
+
     if (CIMISQueried) {
         if (now < CIMISQueried + 300) return; // Do not retry too often.
     }
@@ -281,6 +295,7 @@ static void housecimis_background (int fd, int mode) {
         snprintf (CIMISError, sizeof(CIMISError),
                   "cannot connect, %s", error);
         CIMISState[0] = 'f';
+        houselog_trace (HOUSE_FAILURE, "HTTP", "CONNECTION ERROR: %s", error);
         return;
     }
     DEBUG ("Query: %s\n", url);
@@ -328,10 +343,13 @@ int main (int argc, const char **argv) {
     DEBUG ("Starting.\n");
 
     echttp_default ("-http-service=dynamic");
-
     argc = echttp_open (argc, argv);
     if (echttp_dynamic_port())
         houseportal_initialize (argc, argv);
+
+    housediscover_initialize (argc, argv);
+    houselog_initialize ("cimis", argc, argv);
+
     echttp_route_uri ("/cimis/set", housecimis_set);
     echttp_route_uri ("/cimis/status", housecimis_status);
     echttp_static_route ("/", "/usr/local/share/house/public");
