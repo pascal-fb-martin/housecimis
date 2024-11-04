@@ -27,14 +27,15 @@
 #include <time.h>
 #include <math.h>
 
-#include "housediscover.h"
-#include "houselog.h"
-
 #include "echttp.h"
 #include "echttp_static.h"
 #include "echttp_json.h"
 #include "echttp_xml.h"
 #include "houseportalclient.h"
+
+#include "housediscover.h"
+#include "houselog.h"
+#include "houselog_sensor.h"
 
 static int Debug = 0;
 
@@ -43,6 +44,7 @@ static int Debug = 0;
 // Configuration items (from command line only, small or confidential data)..
 //
 static const char *CIMISAppKey;
+static char   CIMISStationName[127];
 static int    CIMISStation = 0;
 static int    Et0ReferenceDaily = 21; // Max daily value in August 2024.
 
@@ -244,6 +246,20 @@ static void housecimis_response
     houselog_event ("CMIS", "INDEX", "NEW",
                     "INDEX %d%% (DAILY) %d%% (WEEKLY) %d%% (MONTHLY)", 
                     CIMISIndexDaily, CIMISIndexWeekly, CIMISIndexMonthly);
+    struct timeval timestamp;
+    timestamp.tv_sec = CIMISUpdate;
+    timestamp.tv_usec = 0;
+
+    char ascii[16];
+    snprintf (ascii, sizeof(ascii), "%d.%02d", Et0Daily/100, Et0Daily%100);
+    houselog_sensor_data (&timestamp, CIMISStationName, "dailyEt0", ascii, "In");
+    snprintf (ascii, sizeof(ascii), "%d", CIMISIndexDaily);
+    houselog_sensor_data (&timestamp, CIMISStationName, "dailyIndex", ascii, "%");
+    snprintf (ascii, sizeof(ascii), "%d", CIMISIndexWeekly);
+    houselog_sensor_data (&timestamp, CIMISStationName, "weeklyIndex", ascii, "%");
+    snprintf (ascii, sizeof(ascii), "%d", CIMISIndexMonthly);
+    houselog_sensor_data (&timestamp, CIMISStationName, "monthlyIndex", ascii, "%");
+    houselog_sensor_flush();
 }
 
 static void housecimis_background (int fd, int mode) {
@@ -271,6 +287,7 @@ static void housecimis_background (int fd, int mode) {
 
     housediscover (now);
     houselog_background (now);
+    houselog_sensor_background (now);
 
     if (CIMISQueried) {
         if (now < CIMISQueried + 300) return; // Do not retry too often.
@@ -325,6 +342,8 @@ int main (int argc, const char **argv) {
         } else if (echttp_option_match ("-key=", argv[i], &value)) {
             CIMISAppKey = value;
         } else if (echttp_option_match ("-station=", argv[i], &value)) {
+            snprintf (CIMISStationName, sizeof(CIMISStationName),
+                      "CIMIS.%s", value); // No name, use station ID.
             CIMISStation = atoi(value);
         } else if (echttp_option_match ("-reference=", argv[i], &value)) {
             Et0ReferenceDaily = atoi(value);
@@ -349,6 +368,7 @@ int main (int argc, const char **argv) {
 
     housediscover_initialize (argc, argv);
     houselog_initialize ("cimis", argc, argv);
+    houselog_sensor_initialize ("cimis", argc, argv);
 
     echttp_route_uri ("/cimis/set", housecimis_set);
     echttp_route_uri ("/cimis/status", housecimis_status);
