@@ -252,13 +252,13 @@ static void housecimis_response
 
     char ascii[16];
     snprintf (ascii, sizeof(ascii), "%d.%02d", Et0Daily/100, Et0Daily%100);
-    houselog_sensor_data (&timestamp, CIMISStationName, "dailyEt0", ascii, "In");
+    houselog_sensor_data (&timestamp, CIMISStationName, "et0.daily", ascii, "In");
     snprintf (ascii, sizeof(ascii), "%d", CIMISIndexDaily);
-    houselog_sensor_data (&timestamp, CIMISStationName, "dailyIndex", ascii, "%");
+    houselog_sensor_data (&timestamp, CIMISStationName, "index.daily", ascii, "%");
     snprintf (ascii, sizeof(ascii), "%d", CIMISIndexWeekly);
-    houselog_sensor_data (&timestamp, CIMISStationName, "weeklyIndex", ascii, "%");
+    houselog_sensor_data (&timestamp, CIMISStationName, "index.weekly", ascii, "%");
     snprintf (ascii, sizeof(ascii), "%d", CIMISIndexMonthly);
-    houselog_sensor_data (&timestamp, CIMISStationName, "monthlyIndex", ascii, "%");
+    houselog_sensor_data (&timestamp, CIMISStationName, "index.monthly", ascii, "%");
     houselog_sensor_flush();
 }
 
