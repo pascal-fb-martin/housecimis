@@ -320,6 +320,7 @@ static void housecimis_background (int fd, int mode) {
     echttp_attribute_set ("Accept", "application/json");
 
     echttp_submit (0, 0, housecimis_response, (void *)0);
+    houselog_trace (HOUSE_INFO, "HTTP", "REQUEST ISSUED to %s", url);
 }
 
 int main (int argc, const char **argv) {
