@@ -294,7 +294,7 @@ static void housecimis_background (int fd, int mode) {
     }
     CIMISQueried = now;
 
-    if (yesterday < CIMISUpdate + 24 * 3600) return; // Ask only once a day.
+    if (yesterday < CIMISUpdate) return; // Ask only once a day.
 
     struct tm local = *localtime (&yesterday);
 
