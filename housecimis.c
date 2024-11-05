@@ -237,8 +237,8 @@ static void housecimis_response
     CIMISState[0] = 'a'; // No error found.
     CIMISError[0] = 0;
     CIMISUpdate = now - (local.tm_hour * 3600)
-                     - (local.tm_min * 60)
-                     - local.tm_sec + 3600; // Beginning of day.
+                      - (local.tm_min * 60)
+                      - local.tm_sec; // Beginning of day.
     CIMISReceived = now;
 
     CIMISQueried = 0; // Query complete.
@@ -291,7 +291,9 @@ static void housecimis_background (int fd, int mode) {
     }
     CIMISQueried = now;
 
-    if (yesterday < CIMISUpdate) return; // Ask only once a day.
+    // Ask only once a day and no sooner than 1 AM (give CIMIS one hour for
+    // computing their daily average Et0).
+    if (yesterday < CIMISUpdate + 3600) return;
 
     struct tm local = *localtime (&yesterday);
 
