@@ -243,7 +243,7 @@ static void housecimis_response
 
     CIMISQueried = 0; // Query complete.
     DEBUG ("Success.\n");
-    houselog_event ("CMIS", "INDEX", "NEW",
+    houselog_event ("CIMIS", "INDEX", "NEW",
                     "INDEX %d%% (DAILY) %d%% (WEEKLY) %d%% (MONTHLY)", 
                     CIMISIndexDaily, CIMISIndexWeekly, CIMISIndexMonthly);
     struct timeval timestamp;
