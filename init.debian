@@ -18,8 +18,13 @@ PIDFILE=/var/run/housecimis.pid
 
 test -x $DAEMON || exit 0
 
+HTTPOPTS=
+HOUSEOPTS=
 OPTS=
 
+if [ -r /etc/default/housegeneric ]; then
+    . /etc/default/housegeneric
+fi
 if [ -r /etc/default/housecimis ]; then
 	. /etc/default/housecimis
 fi
@@ -28,7 +33,7 @@ fi
 case $1 in
 	start)
 		log_daemon_msg "Starting the CIMIS interface" "housecimis"
-		start-stop-daemon --start --quiet --oknodo --background --pidfile $PIDFILE --make-pidfile --startas $DAEMON -- $OPTS
+		start-stop-daemon --start --quiet --oknodo --background --pidfile $PIDFILE --make-pidfile --startas $DAEMON -- $HTTPOPTS $HOUSEOPTS $OPTS
 		log_end_msg $?
   		;;
 	stop)

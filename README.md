@@ -37,12 +37,12 @@ To install, following the steps below:
 
 ## Interface
 
-The waterwise service accepts the `/cmis/status` HTTP URL and returns the watering index information in the JSON format, for example:
+The HouseCIMIS service accepts the `/cmis/status` HTTP URL and returns the watering index information in the JSON format, for example:
 ```
 {
-  "waterwise": {
-    "timestamp": 1602561976,
-    "host": "andresy",
+  "host": "andresy",
+  "timestamp": 1602561976,
+  "waterindex": {
     "status": {
       "origin": "https://et.water.ca.gov/api/data",
       "state": "a",

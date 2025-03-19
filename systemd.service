@@ -5,12 +5,15 @@ StartLimitIntervalSec=500
 StartLimitBurst=5
 
 [Service]
+User=house
 Restart=on-failure
 RestartSec=50s
-Environment="OPTS="
+Environment="HTTPOPTS=" "HOUSEOPTS=" "OPTS="
+EnvironmentFile=-/etc/default/housegeneric
+EnvironmentFile=-/etc/sysconfig/housegeneric
 EnvironmentFile=-/etc/default/housecimis
 EnvironmentFile=-/etc/sysconfig/housecimis
-ExecStart=/usr/local/bin/housecimis $OPTS
+ExecStart=/usr/local/bin/housecimis $HTTPOPTS $HOUSEOPTS $OPTS
 
 [Install]
 WantedBy=multi-user.target

@@ -1,6 +1,9 @@
 #!/bin/sh
+HTTPOPTS=
+HOUSEOPTS=
 OPTS=
+if [ -e /etc/default/housegeneric ] ; then . /etc/default/housegeneric ; fi
 if [ -e /etc/default/housecimis ] ; then . /etc/default/housecimis ; fi
 sv start houseportal || exit 1
-exec /usr/local/bin/housecimis $OPTS
+exec /usr/local/bin/housecimis $HTTPOPTS $HOUSEOPTS $OPTS
 
