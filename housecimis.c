@@ -197,6 +197,8 @@ static void housecimis_response
                 *endid = 0;
                 houselog_event ("CIMIS", "INDEX", "ERROR",
                                 "REQUEST REJECTED, SUPPORT ID %s", supportid);
+                snprintf (CIMISError, sizeof(CIMISError),
+                          "REQUEST REJECTED, ID %s", supportid);
             }
         }
         return;
