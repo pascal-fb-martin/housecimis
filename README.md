@@ -26,7 +26,7 @@ The access key must be obtained from the CIMIS web site. The station ID can be r
 
 ## Installation
 
-To install, following the steps below:
+To install, follow the steps below:
 * Install git, openssl (libssl-dev).
 * Install [echttp](https://github.com/pascal-fb-martin/echttp)
 * Install [houseportal](https://github.com/pascal-fb-martin/houseportal)
