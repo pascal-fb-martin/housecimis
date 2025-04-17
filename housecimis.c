@@ -323,16 +323,14 @@ static void housecimis_background (int fd, int mode) {
     // computing their daily average Et0).
     if (yesterday < CIMISUpdate + 3600) return;
 
-    struct tm local = *localtime (&yesterday);
-
-    int year = 1900 + local.tm_year;
-    int month = 1 + local.tm_mon;
-
     // No matter what happened, limit the number of requests per day.
     // This applies even when the CIMIS site returns errors.
     // This is independent from the CIMIS response to make this mechanism
     // simple and robust (hopefully).
     //
+    struct tm local = *localtime (&now);
+    int year = 1900 + local.tm_year;
+    int month = 1 + local.tm_mon;
     int today = (year * 10000) + (month * 100) + local.tm_mday;
     if (today != Today) {
         TodayRequestCount = 0;
@@ -349,6 +347,12 @@ static void housecimis_background (int fd, int mode) {
         return;
     }
     TodayRequestCount += 1;
+
+    // Everything is OK, build and issue the HTTP request.
+    //
+    local = *localtime (&yesterday);
+    year = 1900 + local.tm_year;
+    month = 1 + local.tm_mon;
 
     char url[1024];
     snprintf (url, sizeof(url), "%s?appkey=%s&targets=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&dataItems=day-eto",
