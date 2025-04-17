@@ -73,6 +73,11 @@ static time_t CIMISUpdate = 0;
 static time_t CIMISReceived = 0;
 static time_t CIMISQueried = 0;
 
+#define MAX_CIMIS_REQUEST_PER_DAY   16
+static int    TodayRequestCount = 0;
+static int    TodayLimitLogged = 0;
+static int    Today = 0; // year* 10000 + month*100 + day.
+
 static const char *CIMISUrl = "https://et.water.ca.gov/api/data";
 
 static const char CIMISEt0Path[] = ".Data.Providers[0].Records[0].DayEto.Value";
@@ -177,6 +182,26 @@ static void housecimis_response
     }
     DEBUG ("Response: %s\n", data);
 
+    // When CIMIS rejects a request, it may return an HTTP body
+    // that provides a support ID to call the CIMIS support with.
+    // Warning: CIMIS logs are erased after a day or two, so the
+    // ID's lifetime is very short.
+    //
+    const char *content = echttp_attribute_get ("Content-Type");
+    if ((!content) || (!strcmp (content, "text/html"))) {
+        char *supportid = strstr (data, "Your support ID is: ");
+        if (supportid) {
+            supportid = strchr (supportid, ':') + 2; // Skip ": ".
+            char *endid = strchr (supportid, '<');
+            if (endid) {
+                *endid = 0;
+                houselog_event ("CIMIS", "INDEX", "ERROR",
+                                "REQUEST REJECTED, SUPPORT ID %s", supportid);
+            }
+        }
+        return;
+    }
+
     const char *error = echttp_json_parse (data, tokens, &count);
     if (error) {
         snprintf (CIMISError, sizeof(CIMISError),
@@ -185,6 +210,7 @@ static void housecimis_response
         houselog_trace (HOUSE_FAILURE, "JSON", "SYNTAX ERROR %s", error);
         return;
     }
+
     if (count <= 0) {
         snprintf (CIMISError, sizeof(CIMISError), "no data");
         DEBUG ("Error: %s\n", CIMISError);
@@ -300,6 +326,28 @@ static void housecimis_background (int fd, int mode) {
     int year = 1900 + local.tm_year;
     int month = 1 + local.tm_mon;
 
+    // No matter what happened, limit the number of requests per day.
+    // This applies even when the CIMIS site returns errors.
+    // This is independent from the CIMIS response to make this mechanism
+    // simple and robust (hopefully).
+    //
+    int today = (year * 10000) + (month * 100) + local.tm_mday;
+    if (today != Today) {
+        TodayRequestCount = 0;
+        TodayLimitLogged = 0;
+        Today = today;
+    }
+    if (TodayRequestCount > MAX_CIMIS_REQUEST_PER_DAY) {
+        if (!TodayLimitLogged) {
+            TodayLimitLogged = 1;
+            houselog_event ("CIMIS", "INDEX", "SUSPEND",
+                            "CIMIS DAILY REQUEST LIMIT OF %d REACHED",
+                            MAX_CIMIS_REQUEST_PER_DAY);
+        }
+        return;
+    }
+    TodayRequestCount += 1;
+
     char url[1024];
     snprintf (url, sizeof(url), "%s?appkey=%s&targets=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&dataItems=day-eto",
               CIMISUrl, CIMISAppKey, CIMISStation,
@@ -353,8 +401,14 @@ int main (int argc, const char **argv) {
             Debug = 1;
         }
     }
-    if (!CIMISAppKey) exit(1);
-    if (!CIMISPriority) exit(2);
+    if (!CIMISAppKey) {
+        fprintf (stderr, "Missing CIMIS application key\n");
+        exit(1);
+    }
+    if (CIMISPriority <= 0) {
+        fprintf (stderr, "Invalid index priority argument\n");
+        exit(2);
+    }
 
     Et0ReferenceWeekly = Et0ReferenceDaily * 7;
     Et0ReferenceMonthly = Et0ReferenceDaily * 31;
