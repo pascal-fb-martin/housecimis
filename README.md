@@ -2,9 +2,11 @@
 
 ## Overview
 
-A micro service that interfaces with the CIMIS web API to get the daily Et0 and calculates daily, weekly and monthly watering indexes.
+A micro service that interfaces with the CIMIS web API to get the daily Et0 and calculates daily, weekly and monthly watering indexes. These watering indexes are used by the [housesprinkler](https://github.com/pascal-fb-martin/housesprinkler) service.
 
 CIMIS is the California Irrigation Management Information System, part of the California department of water and power. CIMIS provides water information used by farmers and covers most of the territory of California.
+
+It is normal to run multiple watering index services simultaneously. Only the available index with the highest priority will be used. The benefit is resilience, in case one of the watering information sources becomes unavailable.
 
 This project depends on [echttp](https://github.com/pascal-fb-martin/echttp) and [houseportal](https://github.com/pascal-fb-martin/houseportal). It accepts all standard options of echttp and the houseportal client runtime. See these two projects for more information.
 
