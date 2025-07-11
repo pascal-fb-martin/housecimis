@@ -20,7 +20,7 @@ test -x $DAEMON || exit 0
 
 HTTPOPTS=
 HOUSEOPTS=
-OPTS=
+CIMISOPTS=
 
 if [ -r /etc/default/housegeneric ]; then
     . /etc/default/housegeneric
@@ -33,7 +33,7 @@ fi
 case $1 in
 	start)
 		log_daemon_msg "Starting the CIMIS interface" "housecimis"
-		start-stop-daemon --start --quiet --oknodo --background --pidfile $PIDFILE --make-pidfile --startas $DAEMON -- $HTTPOPTS $HOUSEOPTS $OPTS
+		start-stop-daemon --start --quiet --oknodo --background --pidfile $PIDFILE --make-pidfile --startas $DAEMON -- $HTTPOPTS $HOUSEOPTS $CIMISOPTS
 		log_end_msg $?
   		;;
 	stop)
