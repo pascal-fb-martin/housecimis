@@ -17,6 +17,7 @@ This project is also an example of a minimal micro-service based on echttp and h
 The HouseCIMIS service is entirely configured from the command line. This is because there are only a handful of configuration items, and one of them (the access key) is confidential and must be accessible only on the local machine.
 
 In addition to the echttp standard options, this service supports the following command line options:
+
 * -key=STRING: the CIMIS API key. This is a mandatory argument, there is no default.
 * -station=NUMBER: the ID of the CIMIS station used for calculating Et0. This is a mandatory argument, there is no default.
 * -priority=NUMBER: the priority to assign to this watering index. Default is 9.
@@ -29,6 +30,7 @@ The access key must be obtained from the CIMIS web site. The station ID can be r
 ## Installation
 
 To install, follow the steps below:
+
 * Install git, openssl (libssl-dev).
 * Install [echttp](https://github.com/pascal-fb-martin/echttp)
 * Install [houseportal](https://github.com/pascal-fb-martin/houseportal)
