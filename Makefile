@@ -1,6 +1,6 @@
 # HousecMIs - A simple home web service to calculate an index from CMIS
 #
-# Copyright 2023, Pascal Martin
+# Copyright 2025, Pascal Martin
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,10 +16,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
+#
+# WARNING
+#
+# This Makefile depends on echttp and houseportal (dev) being installed.
+
+prefix=/usr/local
+SHARE=$(prefix)/share/house
+
+INSTALL=/usr/bin/install
 
 HAPP=housecimis
-HROOT=/usr/local
-SHARE=$(HROOT)/share/house
 
 # Application build. --------------------------------------------
 
@@ -43,28 +50,22 @@ housecimis: $(OBJS)
 
 # Application files installation --------------------------------
 
-install-app:
-	mkdir -p $(HROOT)/bin
-	mkdir -p /var/lib/house
-	mkdir -p /etc/house
-	rm -f $(HROOT)/bin/housecimis
-	cp housecimis $(HROOT)/bin
-	chown root:root $(HROOT)/bin/housecimis
-	chmod 755 $(HROOT)/bin/housecimis
-	mkdir -p $(SHARE)/public/cimis
-	cp public/* $(SHARE)/public/cimis
-	chmod 644 $(SHARE)/public/cimis/*
-	chmod 755 $(SHARE) $(SHARE)/public $(SHARE)/public/cimis
-	touch /etc/default/housecimis
+install-ui: install-preamble
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(SHARE)/public/cimis
+	$(INSTALL) -m 0644 public/* $(DESTDIR)$(SHARE)/public/cimis
+
+install-app: install-ui
+	$(INSTALL) -m 0755 -s housecimis $(DESTDIR)$(prefix)/bin
+	touch $(DESTDIR)/etc/default/housecimis
 
 uninstall-app:
-	rm -rf $(SHARE)/public/cimis
-	rm -f $(HROOT)/bin/housecimis
+	rm -rf $(DESTDIR)$(SHARE)/public/cimis
+	rm -f $(DESTDIR)$(prefix)/bin/housecimis
 
 purge-app:
 
 purge-config:
-	rm -rf /etc/default/housecimis
+	rm -rf $(DESTDIR)/etc/default/housecimis
 
 # System installation. ------------------------------------------
 
@@ -76,13 +77,13 @@ docker: all
 	rm -rf build
 	mkdir -p build
 	cp Dockerfile build
-	mkdir -p build$(HROOT)/bin
-	cp housecimis build$(HROOT)/bin
-	chmod 755 build$(HROOT)/bin/housecimis
-	mkdir -p build$(HROOT)/share/house/public/cimis
-	cp public/* build$(HROOT)/share/house/public/cimis
-	chmod 644 build$(HROOT)/share/house/public/cimis/*
-	cp $(SHARE)/public/house.css build$(HROOT)/share/house/public
-	chmod 644 build$(HROOT)/share/house/public/house.css
+	mkdir -p build$(prefix)/bin
+	cp housecimis build$(prefix)/bin
+	chmod 755 build$(prefix)/bin/housecimis
+	mkdir -p build$(prefix)/share/house/public/cimis
+	cp public/* build$(prefix)/share/house/public/cimis
+	chmod 644 build$(prefix)/share/house/public/cimis/*
+	cp $(SHARE)/public/house.css build$(prefix)/share/house/public
+	chmod 644 build$(prefix)/share/house/public/house.css
 	cd build ; docker build -t housecimis .
 	rm -rf build
