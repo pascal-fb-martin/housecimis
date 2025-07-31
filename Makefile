@@ -46,7 +46,7 @@ rebuild: clean all
 	gcc -c -Os -o $@ $<
 
 housecimis: $(OBJS)
-	gcc -Os -o housecimis $(OBJS) -lhouseportal -lechttp -lssl -lcrypto -lm -lrt
+	gcc -Os -o housecimis $(OBJS) -lhouseportal -lechttp -lssl -lcrypto -lmagic -lm -lrt
 
 # Application files installation --------------------------------
 
