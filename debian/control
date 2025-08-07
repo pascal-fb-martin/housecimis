@@ -1,0 +1,16 @@
+Source: housecimis
+Version: 1.0
+Section: Web servers
+Maintainer: Pascal Martin <pascal.fb.martin@gmail.com>
+Priority: optional
+Homepage: https://github.com/pascal-fb-martin/housecimis
+Standard-Version: 4.7.0
+Package: housecimis
+Architecture: {{arch}}
+Depends: 
+Description: A House service that provides a watering index
+ HouseCIMIS is part of the House suite of web services.
+ .
+ HouseCIMIS estimate the watering index based on data gathered from CIMIS
+ (California Irrigation Management Information System).
+
