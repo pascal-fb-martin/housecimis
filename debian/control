@@ -7,7 +7,7 @@ Homepage: https://github.com/pascal-fb-martin/housecimis
 Standard-Version: 4.7.0
 Package: housecimis
 Architecture: {{arch}}
-Depends: 
+Depends: houseportal
 Description: A House service that provides a watering index
  HouseCIMIS is part of the House suite of web services.
  .
