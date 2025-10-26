@@ -109,7 +109,6 @@ static const char *housecimis_status (const char *method, const char *uri,
     static char buffer[65537];
     static char pool[65537];
     static char host[256];
-    static char state[2];
 
     ParserToken token[1024];
 
