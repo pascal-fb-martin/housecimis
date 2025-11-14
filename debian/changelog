@@ -1,3 +1,9 @@
+housecimis (1.2) UNREALEASED; urgency=low
+
+   * Use a more semantic web UI with better layout.
+
+ -- Pascal Martin <pascal.fb.martin@gmail.com>  Fri, 14 Nov 2025 12:00:00 PDT
+
 housecimis (1.1) UNREALEASED; urgency=low
 
    * Install README.md as an online manual.
