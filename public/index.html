@@ -23,6 +23,8 @@ function indexUpdate (response) {
         if (updated.indexOf(" GMT") > 0)
             updated = updated.substr(0, updated.indexOf(" GMT"));
 
+        document.getElementById('indexname').innerHTML =
+            response.waterindex.status.name;
         document.getElementById('indexvalue').innerHTML =
             response.waterindex.status.index+'%';
         document.getElementById('priority').innerHTML =
@@ -78,6 +80,8 @@ window.onload = function() {
    <div class="housepane">
    <table class="housestatus">
    <tr><td colspan="2"><span class="housetitle">Watering Index</span></td></tr>
+   <tr><td>Name:</td>
+   <td><span class="housedata" id="indexname"></span></td></tr>
    <tr><td>Type:</td>
    <td><span class="housedata" id="indextype"></span></td></tr>
    <tr><td>Index:</td>

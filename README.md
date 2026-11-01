@@ -18,14 +18,14 @@ The HouseCIMIS service is entirely configured from the command line. This is bec
 
 In addition to the echttp standard options, this service supports the following command line options:
 
-* -key=STRING: the CIMIS API key. This is a mandatory argument, there is no default.
-* -station=NUMBER: the ID of the CIMIS station used for calculating Et0. This is a mandatory argument, there is no default.
+* -key=STRING: the CIMIS API key. This is a mandatory argument, the software will not start without a key.
+* -station=NUMBER[':' STRING]: the ID (and name) of the CIMIS station used for calculating Et0. The string portion is optional and can be used to provide a human firendly name for display and history: if the string is not present the software use "cimis.NUMBER". This is a mandatory argument, the software will not start without a station ID.
 * -priority=NUMBER: the priority to assign to this watering index. Default is 9.
-* -reference=NUMBER: the reference daily Et0, in 1/100 of an inch. Default is 21 (don't ask.. it seems a reasonable value for my location).
+* -reference=NUMBER: the reference daily Et0, in 1/100 of an inch. Default is 21 (don't ask.. this seems to be a reasonable value for _my_ location).
 * -index=daily|weekly|monthly: which watering index to return.
 * -d: enables debug traces.
 
-The access key must be obtained from the CIMIS web site. The station ID can be retrieved from the CIMIS web site. The reference could be the CIMIS Et0 value for the hottest day in the latest month of August.
+The access key must be obtained from the CIMIS web site. The station ID can be retrieved from the CIMIS web site. The reference could be the CIMIS Et0 value for the hottest day in the month of August of the latest year.
 
 ## Installation
 

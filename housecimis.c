@@ -46,7 +46,7 @@ static int Debug = 0;
 static const char *CIMISAppKey;
 static char   CIMISStationName[127];
 static int    CIMISStation = 0;
-static int    Et0ReferenceDaily = 21; // Max daily value in August 2024.
+static int    Et0ReferenceDaily = 21; // Max daily value at Long Beach, CA in August 2024.
 
 static int    Et0ReferenceWeekly = 0;
 static int    Et0ReferenceMonthly = 0;
@@ -123,7 +123,7 @@ static const char *housecimis_status (const char *method, const char *uri,
     echttp_json_add_integer (context, root, "timestamp", (long long)time(0));
     int top = echttp_json_add_object (context, root, "waterindex");
     int container = echttp_json_add_object (context, top, "status");
-    echttp_json_add_string (context, container, "name", "cimis");
+    echttp_json_add_string (context, container, "name", CIMISStationName);
     echttp_json_add_string (context, container, "type", CIMISIndexType);
     echttp_json_add_string (context, container, "origin", CIMISUrl);
     echttp_json_add_string (context, container, "state", CIMISState);
@@ -384,8 +384,12 @@ int main (int argc, const char **argv) {
         } else if (echttp_option_match ("-key=", argv[i], &value)) {
             CIMISAppKey = value;
         } else if (echttp_option_match ("-station=", argv[i], &value)) {
-            snprintf (CIMISStationName, sizeof(CIMISStationName),
-                      "CIMIS.%s", value); // No name, use station ID.
+            const char *sep = strchr (value, ':');
+            if (sep)
+                snprintf (CIMISStationName, sizeof(CIMISStationName), sep+1);
+            else
+                snprintf (CIMISStationName, sizeof(CIMISStationName),
+                          "cimis.%s", value); // No name, use station ID.
             CIMISStation = atoi(value);
         } else if (echttp_option_match ("-reference=", argv[i], &value)) {
             Et0ReferenceDaily = atoi(value);
