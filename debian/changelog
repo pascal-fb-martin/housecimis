@@ -1,3 +1,9 @@
+housecimis (1.3) UNREALEASED; urgency=low
+
+   * Switch to CIMIS new web API
+
+ -- Pascal Martin <pascal.fb.martin@gmail.com>  Sun, 1 Nov 2026 12:00:00 PDT
+
 housecimis (1.2) UNREALEASED; urgency=low
 
    * Use a more semantic web UI with better layout.
