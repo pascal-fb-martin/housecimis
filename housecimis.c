@@ -78,9 +78,10 @@ static int    TodayRequestCount = 0;
 static int    TodayLimitLogged = 0;
 static int    Today = 0; // year* 10000 + month*100 + day.
 
-static const char *CIMISUrl = "https://et.water.ca.gov/api/data";
+static const char *CIMISUrl =
+     "https://et.water.ca.gov/StationWeb/GetDataByStationNumber";
 
-static const char CIMISEt0Path[] = ".Data.Providers[0].Records[0].DayEto.Value";
+static const char CIMISEt0Path[] = ".Data.Providers[0].Records[0].DayAsceEto.Value";
 
 static const char *CIMISIndexType = "Weekly";
 static int   *CIMISIndex = &CIMISIndexWeekly;
@@ -341,8 +342,8 @@ static void housecimis_background (int fd, int mode) {
     month = 1 + local.tm_mon;
 
     char url[1024];
-    snprintf (url, sizeof(url), "%s?appkey=%s&targets=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&dataItems=day-eto",
-              CIMISUrl, CIMISAppKey, CIMISStation,
+    snprintf (url, sizeof(url), "%s?stationNbrs=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
+              CIMISUrl, CIMISStation,
               year, month, local.tm_mday,
               year, month, local.tm_mday);
 
@@ -356,6 +357,7 @@ static void housecimis_background (int fd, int mode) {
     }
     DEBUG ("Query: %s\n", url);
 
+    echttp_attribute_set ("Ocp-Apim-Subscription-Key", CIMISAppKey);
     echttp_attribute_set ("Accept", "application/json");
 
     echttp_submit (0, 0, housecimis_response, (void *)0);
