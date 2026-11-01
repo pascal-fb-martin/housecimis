@@ -21,7 +21,7 @@ In addition to the echttp standard options, this service supports the following 
 * -key=STRING: the CIMIS API key. This is a mandatory argument, the software will not start without a key.
 * -station=NUMBER[':' STRING]: the ID (and name) of the CIMIS station used for calculating Et0. The string portion is optional and can be used to provide a human firendly name for display and history: if the string is not present the software use "cimis.NUMBER". This is a mandatory argument, the software will not start without a station ID.
 * -priority=NUMBER: the priority to assign to this watering index. Default is 9.
-* -reference=NUMBER: the reference daily Et0, in 1/100 of an inch. Default is 21 (don't ask.. this seems to be a reasonable value for _my_ location).
+* -reference=NUMBER: the reference _daily_ Et0, in 1/100 of an inch. Default is 21 (don't ask.. this seems to be a reasonable value for _my_ location).
 * -index=daily|weekly|monthly: which watering index to return.
 * -d: enables debug traces.
 
