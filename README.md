@@ -19,11 +19,15 @@ The HouseCIMIS service is entirely configured from the command line. This is bec
 In addition to the echttp standard options, this service supports the following command line options:
 
 * -key=STRING: the CIMIS API key. This is a mandatory argument, the software will not start without a key.
-* -station=NUMBER[':' STRING]: the ID (and name) of the CIMIS station used for calculating Et0. The string portion is optional and can be used to provide a human firendly name for display and history: if the string is not present the software use "cimis.NUMBER". This is a mandatory argument, the software will not start without a station ID.
+* -station=NUMBER[':' STRING]: the ID (and name) of the CIMIS station used for calculating Et0. The string portion is optional and can be used to provide a human friendly name for display and history: if the string is not present the software use "cimis.NUMBER".
+* -location=REAL,REAL[':' STRING]: the latitude and longitude (and name) of the location used for calculating Et0. The string portion is optional and can be used to provide a human friendly name for display and history: if the string is not present the software use "cimis.REAL,REAL".
+* -location=STRING: the software will use the latitude and longitude provided by the [HouseClock](https://github.com/pascal-fb-martin/houseclock) service as the location used for calculating Et0. The string is used to provide a human friendly name for display and history (the software will not use the latitude and longitude returned by HouseClock to make up a name because of their variability).
 * -priority=NUMBER: the priority to assign to this watering index. Default is 9.
 * -reference=NUMBER: the reference _daily_ Et0, in 1/100 of an inch. Default is 21 (don't ask.. this seems to be a reasonable value for _my_ location).
 * -index=daily|weekly|monthly: which watering index to return.
 * -d: enables debug traces.
+
+If neither the `-station` or `-location` argument is present, the software will not start. These two options should not be used simultaneously; if they are, the station option has precedence.
 
 The access key must be obtained from the CIMIS web site. The station ID can be retrieved from the CIMIS web site. The reference could be the CIMIS Et0 value for the hottest day in the month of August of the latest year.
 

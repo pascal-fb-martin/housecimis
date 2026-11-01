@@ -35,17 +35,25 @@
 
 #include "housediscover.h"
 #include "houselog.h"
+#include "houselocation.h"
 #include "houselog_sensor.h"
 
 static int Debug = 0;
 
 #define DEBUG if (Debug) printf
 
+struct GeoLocation {
+   double latitude;
+   double longitude;
+   int    valid;
+};
+
 // Configuration items (from command line only, small or confidential data)..
 //
 static const char *CIMISAppKey;
 static char   CIMISStationName[127];
 static int    CIMISStation = 0;
+static struct GeoLocation CIMISLocation = {0.0, 0.0, 0};
 static int    Et0ReferenceDaily = 21; // Max daily value at Long Beach, CA in August 2024.
 
 static int    Et0ReferenceWeekly = 0;
@@ -78,8 +86,9 @@ static int    TodayRequestCount = 0;
 static int    TodayLimitLogged = 0;
 static int    Today = 0; // year* 10000 + month*100 + day.
 
-static const char *CIMISUrl =
-     "https://et.water.ca.gov/StationWeb/GetDataByStationNumber";
+static const char CIMISUrl[] = "https://et.water.ca.gov";
+static const char CIMISStationEndPoint[] = "/StationWeb/GetDataByStationNumber";
+static const char CIMISSpatialEndPoint[] = "/SpatialWeb/GetDataBySpatialCoordinates";
 
 static const char CIMISEt0Path[] = ".Data.Providers[0].Records[0].DayAsceEto.Value";
 
@@ -290,32 +299,37 @@ static void housecimis_response
 static void housecimis_background (int fd, int mode) {
 
     static time_t LastCall = 0;
-    time_t now = time(0);
-    time_t yesterday = now - (24 * 3600);
 
+    time_t now = time(0);
     if (now == LastCall) return;
-    LastCall = now;
 
     houseportal_background (now);
     housediscover (now);
     houselog_background (now);
     houselog_sensor_background (now);
+    houselocation_background (now);
 
     if (CIMISQueried) {
         if (now < CIMISQueried + 300) return; // Do not retry too often.
+    } else {
+        if (now < LastCall + 10) return; // Limit CPU usage.
     }
-    CIMISQueried = now;
+    LastCall = now;
 
-    // Ask only once a day and no sooner than 1 AM (give CIMIS one hour for
-    // computing their daily average Et0).
+    // There is no point getting the eto more than once a day.
+    // This should also protect against running a query before 1 AM (+ 3600..)
+    time_t yesterday = now - (24 * 3600);
     if (yesterday < CIMISUpdate + 3600) return;
 
+    // Ask no sooner than 1 AM: give CIMIS one hour for computing
+    // their daily average Et0.
     // No matter what happened, limit the number of requests per day.
     // This applies even when the CIMIS site returns errors.
     // This is independent from the CIMIS response to make this mechanism
     // simple and robust (hopefully).
     //
     struct tm local = *localtime (&now);
+    if (local.tm_hour < 1) return; // Never sooner than 1 AM.
     int year = 1900 + local.tm_year;
     int month = 1 + local.tm_mon;
     int today = (year * 10000) + (month * 100) + local.tm_mday;
@@ -333,19 +347,45 @@ static void housecimis_background (int fd, int mode) {
         }
         return;
     }
-    TodayRequestCount += 1;
 
     // Everything is OK, build and issue the HTTP request.
+    // This software needs yesterday's eto: an eto is only available
+    // once the day is over.
     //
     local = *localtime (&yesterday);
     year = 1900 + local.tm_year;
     month = 1 + local.tm_mon;
 
     char url[1024];
-    snprintf (url, sizeof(url), "%s?stationNbrs=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
-              CIMISUrl, CIMISStation,
-              year, month, local.tm_mday,
-              year, month, local.tm_mday);
+    if (CIMISStation > 0) {
+
+        snprintf (url, sizeof(url), "%s%s?stationNbrs=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
+                  CIMISUrl, CIMISStationEndPoint, CIMISStation,
+                  year, month, local.tm_mday,
+                  year, month, local.tm_mday);
+
+    } else if (CIMISLocation.valid) {
+
+        snprintf (url, sizeof(url), "%s%s?coordinates=lat=%1.4f,lng=%1.4f&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
+                  CIMISUrl, CIMISSpatialEndPoint,
+                  CIMISLocation.latitude, CIMISLocation.longitude,
+                  year, month, local.tm_mday,
+                  year, month, local.tm_mday);
+
+    } else if (houselocation_ready()) {
+
+        snprintf (url, sizeof(url), "%s%s?coordinates=lat=%1.4f,lng=%1.4f&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
+                  CIMISUrl, CIMISSpatialEndPoint,
+                  houselocation_lat(), houselocation_long(),
+                  year, month, local.tm_mday,
+                  year, month, local.tm_mday);
+
+    } else {
+       return; // No location known yet, wait for one before asking.
+    }
+
+    CIMISQueried = now;
+    TodayRequestCount += 1;
 
     const char *error = echttp_client ("GET", url);
     if (error) {
@@ -374,16 +414,23 @@ int main (int argc, const char **argv) {
     dup(open ("/dev/null", O_WRONLY));
 
     housecimis_select_index ("weekly");
+    houselocation_initialize (argc, argv);
+    houselocation_enable (0); // Unless the -location=STRING option is used..
 
     int i;
     const char *value;
     for (i = 1; i < argc; ++i) {
         if (echttp_option_match ("-priority=", argv[i], &value)) {
+
             CIMISPriority = atoi(value);
             if (CIMISPriority < 0) CIMISPriority = 0;
+
         } else if (echttp_option_match ("-key=", argv[i], &value)) {
+
             CIMISAppKey = value;
+
         } else if (echttp_option_match ("-station=", argv[i], &value)) {
+
             const char *sep = strchr (value, ':');
             if (sep)
                 snprintf (CIMISStationName, sizeof(CIMISStationName), sep+1);
@@ -391,11 +438,38 @@ int main (int argc, const char **argv) {
                 snprintf (CIMISStationName, sizeof(CIMISStationName),
                           "cimis.%s", value); // No name, use station ID.
             CIMISStation = atoi(value);
+
+        } else if (echttp_option_match ("-location=", argv[i], &value)) {
+
+            const char *sep = strchr (value, ',');
+            if (sep) {
+                CIMISLocation.latitude = atof (value);
+                CIMISLocation.longitude = atof (sep+1);
+                CIMISLocation.valid = 1;
+
+                sep = strchr (value, ':');
+                if (sep)
+                    snprintf (CIMISStationName, sizeof(CIMISStationName), sep+1);
+                else
+                    snprintf (CIMISStationName, sizeof(CIMISStationName),
+                              "cimis.%1.4f,%1.4f",
+                              CIMISLocation.latitude, CIMISLocation.longitude);
+
+            } else {
+                houselocation_enable (1);
+                snprintf (CIMISStationName, sizeof(CIMISStationName), value);
+            }
+
         } else if (echttp_option_match ("-reference=", argv[i], &value)) {
+
             Et0ReferenceDaily = atoi(value);
+
         } else if (echttp_option_match ("-index=", argv[i], &value)) {
+
             housecimis_select_index (value);
+
         } else if (echttp_option_present ("-d", argv[i])) {
+
             Debug = 1;
         }
     }
@@ -403,6 +477,11 @@ int main (int argc, const char **argv) {
         fprintf (stderr, "Missing CIMIS application key\n");
         exit(1);
     }
+    if (CIMISStationName[0] <= 0) {
+        fprintf (stderr, "Missing CIMIS station or location\n");
+        exit (1);
+    }
+
     if (CIMISPriority <= 0) {
         fprintf (stderr, "Invalid index priority argument\n");
         exit(2);
