@@ -184,9 +184,14 @@ static void housecimis_response
     CIMISState[0] = 'e'; // Assume error.
     if (status != 200) {
         snprintf (CIMISError, sizeof(CIMISError),
-                  "HTTP %d on %s", status, CIMISUrl);
-        houselog_trace (HOUSE_FAILURE, "HTTP",
-                        "ERROR %d on %s", status, CIMISUrl);
+                  "HTTP STATUS %d ON %s", status, CIMISUrl);
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
+        return;
+    }
+
+    if (!data) {
+        snprintf (CIMISError, sizeof(CIMISError), "NO DATA");
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
     DEBUG ("Response: %s\n", data);
@@ -197,43 +202,44 @@ static void housecimis_response
     // ID's lifetime is very short.
     //
     const char *content = echttp_attribute_get ("Content-Type");
-    if ((!content) || (!strcmp (content, "text/html"))) {
+    if ((!content) || (!strstr (content, "application/json"))) {
+        snprintf (CIMISError, sizeof(CIMISError), "CONTENT IS NOT JSON");
         char *supportid = strstr (data, "Your support ID is: ");
         if (supportid) {
             supportid = strchr (supportid, ':') + 2; // Skip ": ".
             char *endid = strchr (supportid, '<');
             if (endid) {
                 *endid = 0;
-                houselog_event ("CIMIS", "INDEX", "ERROR",
-                                "REQUEST REJECTED, SUPPORT ID %s", supportid);
                 snprintf (CIMISError, sizeof(CIMISError),
-                          "REQUEST REJECTED, ID %s", supportid);
+                          "REQUEST REJECTED, SUPPORT ID %s", supportid);
             }
         }
+        // Make it an event because of the support ID.
+        houselog_event ("CIMIS", CIMISStationName, "ERROR", "%s", CIMISError);
         return;
     }
 
     const char *error = echttp_json_parse (data, tokens, &count);
     if (error) {
         snprintf (CIMISError, sizeof(CIMISError),
-                  "JSON syntax error %s", error);
+                  "JSON SYNTAX ERROR: %s", error);
         DEBUG ("Error: %s\n", CIMISError);
-        houselog_trace (HOUSE_FAILURE, "JSON", "SYNTAX ERROR %s", error);
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
 
     if (count <= 0) {
-        snprintf (CIMISError, sizeof(CIMISError), "no data");
+        snprintf (CIMISError, sizeof(CIMISError), "NO JSON DATA");
         DEBUG ("Error: %s\n", CIMISError);
-        houselog_trace (HOUSE_FAILURE, "JSON", "NO DATA");
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
 
     int index = echttp_json_search (tokens, CIMISEt0Path);
     if (index <= 0) {
-        snprintf (CIMISError, sizeof(CIMISError), "no daily Et0 found");
+        snprintf (CIMISError, sizeof(CIMISError), "NO DAILY ET0 FOUND");
         DEBUG ("Error: %s\n", CIMISError);
-        houselog_trace (HOUSE_FAILURE, "JSON", CIMISError);
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
     Et0Daily = housecimis_convert_et0 (tokens[index].value.string);
@@ -280,7 +286,7 @@ static void housecimis_response
 
     CIMISQueried = 0; // Query complete.
     DEBUG ("Success.\n");
-    houselog_event ("CIMIS", "INDEX", "NEW",
+    houselog_event ("CIMIS", CIMISStationName, "NEW",
                     "INDEX %d%% (DAILY) %d%% (WEEKLY) %d%% (MONTHLY)", 
                     CIMISIndexDaily, CIMISIndexWeekly, CIMISIndexMonthly);
     struct timeval timestamp;
@@ -337,13 +343,12 @@ static void housecimis_background (int fd, int mode) {
         TodayRequestCount = 0;
         TodayLimitLogged = 0;
         Today = today;
-    }
-    if (TodayRequestCount > MAX_CIMIS_REQUEST_PER_DAY) {
+    } else if (TodayRequestCount > MAX_CIMIS_REQUEST_PER_DAY) {
         if (!TodayLimitLogged) {
             TodayLimitLogged = 1;
-            houselog_event ("CIMIS", "INDEX", "SUSPEND",
-                            "CIMIS DAILY REQUEST LIMIT OF %d REACHED",
-                            MAX_CIMIS_REQUEST_PER_DAY);
+            houselog_event ("CIMIS", CIMISStationName, "SUSPEND",
+                            "DAILY LIMIT OF %d REACHED: %s",
+                            MAX_CIMIS_REQUEST_PER_DAY, CIMISError);
         }
         return;
     }
@@ -357,25 +362,29 @@ static void housecimis_background (int fd, int mode) {
     month = 1 + local.tm_mon;
 
     char url[1024];
+    const char *endpoint = "(none)";
     if (CIMISStation > 0) {
 
+        endpoint = CIMISStationEndPoint;
         snprintf (url, sizeof(url), "%s%s?stationNbrs=%d&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
-                  CIMISUrl, CIMISStationEndPoint, CIMISStation,
+                  CIMISUrl, endpoint, CIMISStation,
                   year, month, local.tm_mday,
                   year, month, local.tm_mday);
 
     } else if (CIMISLocation.valid) {
 
+        endpoint = CIMISSpatialEndPoint;
         snprintf (url, sizeof(url), "%s%s?coordinates=lat=%1.4f,lng=%1.4f&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
-                  CIMISUrl, CIMISSpatialEndPoint,
+                  CIMISUrl, endpoint,
                   CIMISLocation.latitude, CIMISLocation.longitude,
                   year, month, local.tm_mday,
                   year, month, local.tm_mday);
 
     } else if (houselocation_ready()) {
 
+        endpoint = CIMISSpatialEndPoint;
         snprintf (url, sizeof(url), "%s%s?coordinates=lat=%1.4f,lng=%1.4f&startDate=%04d-%02d-%02d&endDate=%04d-%02d-%02d&isHourly=false&unitOfMeasure=E&dataItems=day-asce-eto",
-                  CIMISUrl, CIMISSpatialEndPoint,
+                  CIMISUrl, endpoint,
                   houselocation_lat(), houselocation_long(),
                   year, month, local.tm_mday,
                   year, month, local.tm_mday);
@@ -390,9 +399,9 @@ static void housecimis_background (int fd, int mode) {
     const char *error = echttp_client ("GET", url);
     if (error) {
         snprintf (CIMISError, sizeof(CIMISError),
-                  "cannot connect, %s", error);
+                  "HTTP CONNECTION ERROR: %s", error);
         CIMISState[0] = 'f';
-        houselog_trace (HOUSE_FAILURE, "HTTP", "CONNECTION ERROR: %s", error);
+        houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
     DEBUG ("Query: %s\n", url);
@@ -401,7 +410,8 @@ static void housecimis_background (int fd, int mode) {
     echttp_attribute_set ("Accept", "application/json");
 
     echttp_submit (0, 0, housecimis_response, (void *)0);
-    houselog_trace (HOUSE_INFO, "HTTP", "REQUEST ISSUED TO %s", CIMISUrl);
+    houselog_trace (HOUSE_INFO, CIMISStationName,
+                    "HTTP REQUEST ISSUED TO %s%s", CIMISUrl, endpoint);
 }
 
 int main (int argc, const char **argv) {

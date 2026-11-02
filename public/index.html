@@ -12,6 +12,8 @@ function indexUpdate (response) {
 
     document.getElementById('indextype').innerHTML =
         response.waterindex.status.type;
+    document.getElementById('indexname').innerHTML =
+        response.waterindex.status.name;
 
     if (response.waterindex.status.received) {
         var received = new Date(response.waterindex.status.received * 1000);
@@ -23,8 +25,6 @@ function indexUpdate (response) {
         if (updated.indexOf(" GMT") > 0)
             updated = updated.substr(0, updated.indexOf(" GMT"));
 
-        document.getElementById('indexname').innerHTML =
-            response.waterindex.status.name;
         document.getElementById('indexvalue').innerHTML =
             response.waterindex.status.index+'%';
         document.getElementById('priority').innerHTML =
@@ -38,6 +38,7 @@ function indexUpdate (response) {
     } else {
         document.getElementById('indexvalue').innerHTML =
             response.waterindex.status.error;
+        setTimeout (indexInfo, 3000); // Faster update when no index available.
     }
 }
 
