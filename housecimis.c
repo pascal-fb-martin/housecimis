@@ -74,6 +74,7 @@ static int    CIMISIndexDaily = 0;
 static int    CIMISIndexWeekly = 0;
 static int    CIMISIndexMonthly = 0;
 
+static int    CIMISAvailability = 1; // 1 AM. Spatial eto is available later
 static int    CIMISPriority = 9;
 static char   CIMISState[2] = "u";
 static char   CIMISError[256] = "";
@@ -325,9 +326,9 @@ static void housecimis_background (int fd, int mode) {
     LastCall = now;
 
     // There is no point getting the eto more than once a day.
-    // This should also protect against running a query before 1 AM (+ 3600..)
+    // This should also protect against running a query too early.
     time_t yesterday = now - (24 * 3600);
-    if (yesterday < CIMISUpdate + 3600) return;
+    if (yesterday < CIMISUpdate + (CIMISAvailability * 3600)) return;
 
     // Ask no sooner than 1 AM: give CIMIS one hour for computing
     // their daily average Et0.
@@ -337,7 +338,7 @@ static void housecimis_background (int fd, int mode) {
     // simple and robust (hopefully).
     //
     struct tm local = *localtime (&now);
-    if (local.tm_hour < 1) return; // Never sooner than 1 AM.
+    if (local.tm_hour < CIMISAvailability) return; // Not too soon.
     int year = 1900 + local.tm_year;
     int month = 1 + local.tm_mon;
     int today = (year * 10000) + (month * 100) + local.tm_mday;
@@ -471,6 +472,8 @@ int main (int argc, const char **argv) {
                 houselocation_enable (1);
                 snprintf (CIMISStationName, sizeof(CIMISStationName), value);
             }
+
+            CIMISAvailability = 5; // Spatial eto available only after 5 AM.
 
         } else if (echttp_option_match ("-reference=", argv[i], &value)) {
 
