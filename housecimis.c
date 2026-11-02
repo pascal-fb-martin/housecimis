@@ -317,6 +317,8 @@ static void housecimis_background (int fd, int mode) {
 
     if (CIMISQueried) {
         if (now < CIMISQueried + 300) return; // Do not retry too often.
+    } else if (TodayRequestCount > MAX_CIMIS_REQUEST_PER_DAY / 3) {
+        if (now < LastCall + 600) return; // Recurring error: is it too early?
     } else {
         if (now < LastCall + 10) return; // Limit CPU usage.
     }
