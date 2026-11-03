@@ -216,7 +216,7 @@ static void housecimis_response
             }
         }
         // Make it an event because of the support ID.
-        houselog_event ("CIMIS", CIMISStationName, "ERROR", "%s", CIMISError);
+        houselog_event ("INDEX", CIMISStationName, "ERROR", "%s", CIMISError);
         return;
     }
 
@@ -287,7 +287,7 @@ static void housecimis_response
 
     CIMISQueried = 0; // Query complete.
     DEBUG ("Success.\n");
-    houselog_event ("CIMIS", CIMISStationName, "NEW",
+    houselog_event ("INDEX", CIMISStationName, "NEW",
                     "INDEX %d%% (DAILY) %d%% (WEEKLY) %d%% (MONTHLY)", 
                     CIMISIndexDaily, CIMISIndexWeekly, CIMISIndexMonthly);
     struct timeval timestamp;
@@ -349,7 +349,7 @@ static void housecimis_background (int fd, int mode) {
     } else if (TodayRequestCount > MAX_CIMIS_REQUEST_PER_DAY) {
         if (!TodayLimitLogged) {
             TodayLimitLogged = 1;
-            houselog_event ("CIMIS", CIMISStationName, "SUSPEND",
+            houselog_event ("INDEX", CIMISStationName, "SUSPEND",
                             "DAILY LIMIT OF %d REACHED: %s",
                             MAX_CIMIS_REQUEST_PER_DAY, CIMISError);
         }
