@@ -178,14 +178,14 @@ static void housecimis_response
 
     status = echttp_redirected("GET");
     if (!status) {
-        echttp_submit (0, 0, housecimis_response, (void *)0);
+        echttp_submit (0, 0, housecimis_response, origin);
         return;
     }
 
     CIMISState[0] = 'e'; // Assume error.
     if (status != 200) {
-        snprintf (CIMISError, sizeof(CIMISError),
-                  "HTTP STATUS %d ON %s", status, CIMISUrl);
+        snprintf (CIMISError, sizeof(CIMISError), "HTTP %d (%s) ON %s%s",
+                  status, echttp_reason(), CIMISUrl, (const char *)origin);
         houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
@@ -412,7 +412,7 @@ static void housecimis_background (int fd, int mode) {
     echttp_attribute_set ("Ocp-Apim-Subscription-Key", CIMISAppKey);
     echttp_attribute_set ("Accept", "application/json");
 
-    echttp_submit (0, 0, housecimis_response, (void *)0);
+    echttp_submit (0, 0, housecimis_response, (void *)endpoint);
     houselog_trace (HOUSE_INFO, CIMISStationName,
                     "HTTP REQUEST ISSUED TO %s%s", CIMISUrl, endpoint);
 }
