@@ -183,14 +183,14 @@ static void housecimis_response
     }
 
     CIMISState[0] = 'e'; // Assume error.
-    if (status != 200) {
+    if (!ECHTTP_SUCCESS(status)) {
         snprintf (CIMISError, sizeof(CIMISError), "HTTP %d (%s) ON %s%s",
                   status, echttp_reason(), CIMISUrl, (const char *)origin);
         houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
 
-    if (!data) {
+    if (!data || !length) {
         snprintf (CIMISError, sizeof(CIMISError), "NO DATA");
         houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
@@ -330,7 +330,7 @@ static void housecimis_background (int fd, int mode) {
     time_t yesterday = now - (24 * 3600);
     if (yesterday < CIMISUpdate + (CIMISAvailability * 3600)) return;
 
-    // Ask no sooner than 1 AM: give CIMIS one hour for computing
+    // Ask no sooner than 1 (or 5) AM: give CIMIS enough time for computing
     // their daily average Et0.
     // No matter what happened, limit the number of requests per day.
     // This applies even when the CIMIS site returns errors.
@@ -396,8 +396,7 @@ static void housecimis_background (int fd, int mode) {
        return; // No location known yet, wait for one before asking.
     }
 
-    CIMISQueried = now;
-    TodayRequestCount += 1;
+    CIMISQueried = now; // Even if the connection fails: delay next attempts
 
     const char *error = echttp_client ("GET", url);
     if (error) {
@@ -407,6 +406,7 @@ static void housecimis_background (int fd, int mode) {
         houselog_trace (HOUSE_FAILURE, CIMISStationName, "%s", CIMISError);
         return;
     }
+    TodayRequestCount += 1; // Only if the query was effectively sent
     DEBUG ("Query: %s\n", url);
 
     echttp_attribute_set ("Ocp-Apim-Subscription-Key", CIMISAppKey);
